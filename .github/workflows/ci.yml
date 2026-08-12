@@ -11,16 +11,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
+
       - name: Install dependencies
-        run: npm install   # BUG 1 — should be npm ci
+        # Use npm ci for reproducible installs from package-lock.json.
+        run: npm ci
 
   test:
     runs-on: ubuntu-latest
-    # BUG 2 — missing needs: install, so test runs in parallel with install
-    # BUG 3 — no checkout or npm ci step, so node_modules is empty on this fresh machine
+    needs: install
+
     steps:
+      # Each job gets a fresh runner, so the repository must be checked out again.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        # Install dependencies in this fresh runner before running Jest.
+        run: npm ci
+
       - name: Run tests
         run: npm test
